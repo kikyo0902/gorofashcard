@@ -1,1 +1,774 @@
-# gorofashcard
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Flash Cards - Học tiếng Nhật (Decks)</title>
+  <style>
+    :root{
+      --bg:#0b1020; --card:#121a33; --text:#e9eeff; --muted:#a9b4e5;
+      --accent:#7c5cff; --good:#35d07f; --bad:#ff5c7a; --line:rgba(255,255,255,.08);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto;
+      background: radial-gradient(1200px 600px at 20% -10%, rgba(124,92,255,.35), transparent),
+                  radial-gradient(800px 500px at 90% 10%, rgba(53,208,127,.25), transparent),
+                  var(--bg);
+      color:var(--text);
+    }
+    .wrap{max-width:1040px;margin:0 auto;padding:20px}
+    header{
+      display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;
+      padding:14px 16px;border:1px solid var(--line);border-radius:16px;
+      background:rgba(18,26,51,.75);backdrop-filter: blur(10px);
+    }
+    h1{font-size:18px;margin:0}
+    .sub{color:var(--muted);font-size:13px}
+    .grid{display:grid;grid-template-columns: 1.1fr .9fr;gap:16px;margin-top:16px}
+    @media (max-width: 900px){ .grid{grid-template-columns:1fr} }
+
+    .panel{
+      border:1px solid var(--line);border-radius:16px;padding:16px;
+      background:rgba(18,26,51,.55);backdrop-filter: blur(10px);
+    }
+    .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+    button, select, input{
+      border-radius:12px;border:1px solid var(--line);
+      background:rgba(15,23,48,.8);color:var(--text);
+      padding:10px 12px;font-size:14px;outline:none;
+    }
+    button{cursor:pointer}
+    button.primary{background:rgba(124,92,255,.95);border-color:rgba(124,92,255,.6)}
+    button.good{background:rgba(53,208,127,.95);border-color:rgba(53,208,127,.6);color:#07130c}
+    button.bad{background:rgba(255,92,122,.95);border-color:rgba(255,92,122,.6)}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    .stat{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;color:var(--muted);font-size:13px}
+    .stat b{color:var(--text)}
+    .cardBox{display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:center}
+    .card{width:100%;max-width:560px;height:320px;perspective: 1100px}
+    .cardInner{
+      width:100%;height:100%;
+      position:relative;transform-style:preserve-3d;
+      transition:transform .6s cubic-bezier(.2,.8,.2,1);
+    }
+    .card.flip .cardInner{transform:rotateY(180deg)}
+    .face{
+      position:absolute;inset:0;
+      border-radius:18px;border:1px solid var(--line);
+      background:linear-gradient(180deg, rgba(18,26,51,.9), rgba(15,23,48,.85));
+      display:flex;align-items:center;justify-content:center;
+      padding:18px;
+      backface-visibility:hidden;
+      box-shadow: 0 20px 50px rgba(0,0,0,.35);
+    }
+    .back{transform:rotateY(180deg);background:linear-gradient(180deg, rgba(18,26,51,.85), rgba(12,18,40,.9))}
+    .big{text-align:center;line-height:1.25}
+    .jp{font-size:44px;font-weight:700;letter-spacing:.5px}
+    .kana{font-size:24px;color:var(--muted);margin-top:10px}
+    .vn{font-size:22px;margin-top:10px}
+    .tagRow{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:14px}
+    .tag{
+      font-size:12px;color:var(--muted);border:1px solid var(--line);
+      padding:6px 10px;border-radius:999px;background:rgba(0,0,0,.15)
+    }
+    .hint{color:var(--muted);font-size:13px;text-align:center}
+    .formRow{display:grid;grid-template-columns: 1fr 1fr;gap:10px;margin-top:10px}
+    .formRow .full{grid-column:1 / -1}
+    textarea{
+      width:100%;min-height:90px;resize:vertical;
+      border-radius:12px;border:1px solid var(--line);
+      background:rgba(15,23,48,.8);color:var(--text);
+      padding:10px 12px;font-size:14px;outline:none;
+    }
+    .list{margin-top:12px;max-height:260px;overflow:auto;border-top:1px solid var(--line);padding-top:10px}
+    .item{
+      display:flex;gap:10px;align-items:flex-start;justify-content:space-between;
+      padding:10px;border:1px solid var(--line);border-radius:14px;margin-bottom:8px;
+      background:rgba(15,23,48,.55);
+    }
+    .item small{color:var(--muted)}
+    .itemBtns{display:flex;gap:8px;flex-wrap:wrap}
+    .rowBetween{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .kbd{font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px;
+      padding:2px 8px;border-radius:8px;border:1px solid var(--line);color:var(--muted)}
+      .table{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0 8px;
+  margin-top:12px;
+}
+.table th{
+  text-align:left;
+  font-size:12px;
+  color:var(--muted);
+  font-weight:600;
+  padding:0 8px;
+}
+.table td{
+  background:rgba(15,23,48,.55);
+  border:1px solid var(--line);
+  padding:10px 10px;
+  border-radius:14px;
+  vertical-align:middle;
+}
+.pill{
+  display:inline-block;
+  padding:4px 10px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  color:var(--muted);
+  font-size:12px;
+}
+.pct{
+  font-weight:800;
+}
+.rowBtns{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Flash Cards — Học tiếng Nhật (Deck/Danh sách)</h1>
+        <div class="sub">Bấm thẻ để lật • <span class="kbd">Space</span> lật • <span class="kbd">←</span>/<span class="kbd">→</span> chuyển thẻ</div>
+      </div>
+      <div class="controls">
+        <select id="deckFilter"></select>
+        <select id="mode">
+          <option value="all">Tất cả</option>
+          <option value="new">Chưa nhớ</option>
+          <option value="known">Đã nhớ</option>
+        </select>
+        <button id="shuffleBtn">Ngẫu nhiên</button>
+        <button class="primary" id="resetProgress">Reset tiến độ</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Left -->
+      <section class="panel">
+        <div class="controls" style="justify-content:space-between">
+          <div class="controls">
+            <button id="prevBtn">← Trước</button>
+            <button id="nextBtn">Sau →</button>
+            <button id="flipBtn">Lật</button>
+          </div>
+          <div class="controls">
+            <button class="bad" id="markUnknown">Chưa nhớ</button>
+            <button class="good" id="markKnown">Đã nhớ</button>
+          </div>
+        </div>
+
+        <div class="stat" id="stats"></div>
+
+        <div class="cardBox" style="margin-top:14px">
+          <div class="card" id="card">
+            <div class="cardInner">
+              <div class="face front">
+                <div class="big">
+                  <div class="jp" id="frontText">—</div>
+                  <div class="kana" id="frontSub">Bấm để lật</div>
+                  <div class="tagRow">
+                    <div class="tag" id="tagDeck">📚 Deck: —</div>
+                    <div class="tag" id="tagCat">#</div>
+                    <div class="tag" id="tagLevel">N?</div>
+                  </div>
+                </div>
+              </div>
+              <div class="face back">
+                <div class="big">
+                  <div class="jp" id="backText">—</div>
+                  <div class="kana" id="backKana">—</div>
+                  <div class="vn" id="backVn">—</div>
+                  <div class="hint" id="example">Ví dụ: —</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="hint">Tip: Thêm deck/danh sách và gán từ vào deck ở panel bên phải →</div>
+        </div>
+      </section>
+
+      <!-- Right -->
+      <aside class="panel">
+        <div class="rowBetween">
+          <div>
+            <h2 style="margin:0 0 6px;font-size:16px">Deck (Danh sách)</h2>
+            <div class="sub">Tạo deck riêng: N5, N4, Công việc, Hội thoại…</div>
+          </div>
+        </div>
+
+        <div class="controls" style="margin-top:8px">
+          <input id="newDeckName" placeholder="Tên deck mới (vd: Công việc)" />
+          <button class="primary" id="createDeckBtn">+ Tạo deck</button>
+          <button class="bad" id="deleteDeckBtn" title="Xóa deck đang chọn (không xóa thẻ)">Xóa deck</button>
+        </div>
+        <div style="margin-top:12px">
+  <div class="rowBetween">
+    <div>
+      <h2 style="margin:0;font-size:16px">Quản lý deck</h2>
+      <div class="sub">Thống kê % đã nhớ theo từng deck.</div>
+    </div>
+  </div>
+
+  <div id="deckStatsWrap"></div>
+</div>
+        <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+
+        <h2 style="margin:0 0 6px;font-size:16px">Thêm Flash Card</h2>
+        <div class="sub">Khi thêm thẻ, chọn deck muốn lưu.</div>
+
+        <div class="formRow">
+          <select id="deckSelect" class="full"></select>
+
+          <input id="jp" placeholder="日本語 (Kanji/Kana) — ví dụ: 勉強" />
+          <input id="kana" placeholder="Kana — ví dụ: べんきょう" />
+          <input id="vn" class="full" placeholder="Nghĩa tiếng Việt — ví dụ: học tập" />
+          <input id="cat" placeholder="Chủ đề — ví dụ: công việc" />
+          <input id="level" placeholder="JLPT — ví dụ: N4" />
+          <textarea id="ex" class="full" placeholder="Ví dụ câu (tuỳ chọn) — ví dụ: 毎日日本語を勉強します。"></textarea>
+        </div>
+
+        <div class="controls" style="margin-top:10px">
+          <button class="primary" id="addBtn">+ Thêm thẻ</button>
+          <button id="importBtn">Import mẫu</button>
+          <button id="clearAllBtn">Xóa tất cả</button>
+        </div>
+
+        <div class="list" id="list"></div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    // ========= Storage =========
+    const KEY_CARDS = "jp_flashcards_cards_v2";
+    const KEY_PROGRESS = "jp_flashcards_progress_v2";
+    const KEY_DECKS = "jp_flashcards_decks_v2";
+
+    // cards: [{jp,kana,vn,ex,cat,level,deckId}]
+    // decks: [{id,name}]
+    function uid(){ return Math.random().toString(16).slice(2) + Date.now().toString(16); }
+
+    function loadJSON(key, fallback){
+      const raw = localStorage.getItem(key);
+      if(!raw) return fallback;
+      try { return JSON.parse(raw); } catch { return fallback; }
+    }
+    function saveJSON(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+
+    // ========= Default =========
+    const defaultDecks = [
+      { id:"all", name:"Tất cả (All)" },
+      { id:"default", name:"Mặc định" },
+      { id:"work", name:"Công việc" },
+      { id:"daily", name:"Giao tiếp" },
+    ];
+
+    const defaultCards = [
+      { jp:"勉強", kana:"べんきょう", vn:"học tập", ex:"毎日日本語を勉強します。", cat:"học tập", level:"N5", deckId:"default" },
+      { jp:"約束", kana:"やくそく", vn:"lời hứa / hẹn", ex:"明日、駅で会う約束です。", cat:"đời sống", level:"N4", deckId:"daily" },
+      { jp:"確認", kana:"かくにん", vn:"xác nhận", ex:"もう一度確認してください。", cat:"công việc", level:"N3", deckId:"work" },
+      { jp:"大丈夫", kana:"だいじょうぶ", vn:"ổn mà / không sao", ex:"大丈夫？うん、大丈夫。", cat:"giao tiếp", level:"N5", deckId:"daily" },
+    ];
+
+    // ========= State =========
+    let decks = loadJSON(KEY_DECKS, null);
+    if(!decks){
+      decks = defaultDecks.slice();
+      saveJSON(KEY_DECKS, decks);
+    } else {
+      // đảm bảo có deck "all"
+      if(!decks.find(d=>d.id==="all")){
+        decks.unshift({id:"all", name:"Tất cả (All)"});
+        saveJSON(KEY_DECKS, decks);
+      }
+    }
+
+    let cards = loadJSON(KEY_CARDS, []);
+    let progress = loadJSON(KEY_PROGRESS, {}); // { [cardId]: true/false }
+
+    // nếu chưa có card lần đầu, để trống (user chủ động import)
+    // (bạn có thể đổi thành auto import nếu muốn)
+
+    let filtered = [];
+    let idx = 0;
+    let isFlip = false;
+
+    const $ = (id)=>document.getElementById(id);
+
+    const cardEl = $("card");
+    const frontText = $("frontText");
+    const backText  = $("backText");
+    const backKana  = $("backKana");
+    const backVn    = $("backVn");
+    const example   = $("example");
+    const tagDeck   = $("tagDeck");
+    const tagCat    = $("tagCat");
+    const tagLevel  = $("tagLevel");
+    const stats     = $("stats");
+    const listEl    = $("list");
+    const modeEl    = $("mode");
+    const deckStatsWrap = $("deckStatsWrap");
+
+    const deckFilterEl = $("deckFilter");
+    const deckSelectEl = $("deckSelect");
+
+    // ========= Helpers =========
+    function deckNameById(id){
+      return (decks.find(d=>d.id===id)?.name) || "Mặc định";
+    }
+    function getDeckStats(){
+  // bỏ deck "all"
+  const realDecks = decks.filter(d=>d.id!=="all");
+  const stats = realDecks.map(d=>{
+    const deckCards = cards.filter(c=>(c.deckId||"default")===d.id);
+    const total = deckCards.length;
+    const known = deckCards.filter(c=>progress[c.id]===true).length;
+    const pct = total ? Math.round((known/total)*100) : 0;
+    return { id:d.id, name:d.name, total, known, pct };
+  });
+  // sắp xếp: % giảm dần, rồi total giảm dần
+  stats.sort((a,b)=> (b.pct-a.pct) || (b.total-a.total));
+  return stats;
+}
+
+function renderDeckStats(){
+  if(!deckStatsWrap) return;
+
+  const s = getDeckStats();
+  if(s.length === 0){
+    deckStatsWrap.innerHTML = `<div class="hint">Chưa có deck.</div>`;
+    return;
+  }
+
+  const rows = s.map(x=>{
+    const lock = (x.id==="default"); // không cho xóa deck mặc định
+    return `
+      <tr>
+        <td style="width:34%">
+          <div style="font-weight:800">${x.name}</div>
+          <div class="sub"><span class="pill">id: ${x.id}</span></div>
+        </td>
+        <td style="width:22%">
+          <div><b>${x.known}</b> / <b>${x.total}</b></div>
+          <div class="sub">đã nhớ / tổng</div>
+        </td>
+        <td style="width:14%">
+          <div class="pct">${x.pct}%</div>
+        </td>
+        <td style="width:30%">
+          <div class="rowBtns">
+            <button data-studydeck="${x.id}">Học deck</button>
+            <button data-renamedeck="${x.id}">Đổi tên</button>
+            <button data-deletedeck="${x.id}" class="bad" ${lock ? "disabled" : ""}>Xóa</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+
+  deckStatsWrap.innerHTML = `
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Deck</th>
+          <th>Tiến độ</th>
+          <th>%</th>
+          <th style="text-align:right">Hành động</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+
+  // bind actions
+  deckStatsWrap.querySelectorAll("button[data-studydeck]").forEach(btn=>{
+    btn.onclick = ()=>{
+      const id = btn.dataset.studydeck;
+      deckFilterEl.value = id;   // lọc sang deck đó
+      modeEl.value = "all";
+      applyFilter();
+      window.scrollTo({top:0, behavior:"smooth"});
+    };
+  });
+
+  deckStatsWrap.querySelectorAll("button[data-renamedeck]").forEach(btn=>{
+    btn.onclick = ()=>{
+      const id = btn.dataset.renamedeck;
+      const old = deckNameById(id);
+      const name = prompt("Tên mới cho deck:", old);
+      if(!name) return;
+
+      if(decks.some(d=>d.name.toLowerCase()===name.trim().toLowerCase() && d.id!==id)){
+        alert("Tên deck bị trùng.");
+        return;
+      }
+
+      decks = decks.map(d=> d.id===id ? {...d, name:name.trim()} : d);
+      saveJSON(KEY_DECKS, decks);
+      renderDeckOptions();
+      renderDeckStats();
+      applyFilter();
+    };
+  });
+
+  deckStatsWrap.querySelectorAll("button[data-deletedeck]").forEach(btn=>{
+    btn.onclick = ()=>{
+      const id = btn.dataset.deletedeck;
+      if(id==="default") return;
+
+      const name = deckNameById(id);
+      if(!confirm(`Xóa deck "${name}"?\n(Thẻ trong deck sẽ chuyển về 'Mặc định')`)) return;
+
+      cards = cards.map(c => (c.deckId===id ? {...c, deckId:"default"} : c));
+      decks = decks.filter(d=>d.id!==id);
+
+      saveJSON(KEY_CARDS, cards);
+      saveJSON(KEY_DECKS, decks);
+
+      renderDeckOptions();
+      renderDeckStats();
+      deckFilterEl.value = "all";
+      applyFilter();
+    };
+  });
+}
+    function renderDeckOptions(){
+      // deckFilter: có "all"
+      deckFilterEl.innerHTML = "";
+      decks.forEach(d=>{
+        const opt = document.createElement("option");
+        opt.value = d.id;
+        opt.textContent = d.name;
+        deckFilterEl.appendChild(opt);
+      });
+
+      // deckSelect: không cho chọn "all"
+      deckSelectEl.innerHTML = "";
+      decks.filter(d=>d.id!=="all").forEach(d=>{
+        const opt = document.createElement("option");
+        opt.value = d.id;
+        opt.textContent = d.name;
+        deckSelectEl.appendChild(opt);
+      });
+
+      // chọn mặc định
+      if(!deckFilterEl.value) deckFilterEl.value = "all";
+      if(!deckSelectEl.value) deckSelectEl.value = "default";
+    }
+
+    function applyFilter(){
+      const mode = modeEl.value;
+      const deckId = deckFilterEl.value;
+
+      let arr = cards.slice();
+
+      if(deckId !== "all"){
+        arr = arr.filter(c => (c.deckId || "default") === deckId);
+      }
+
+      if(mode === "new"){
+        arr = arr.filter(c => progress[c.id] !== true);
+      } else if(mode === "known"){
+        arr = arr.filter(c => progress[c.id] === true);
+      }
+
+      filtered = arr;
+
+      if(filtered.length === 0){
+        idx = 0;
+        renderEmpty();
+        renderStats();
+        renderList();
+        return;
+      }
+
+      idx = Math.min(idx, filtered.length - 1);
+      isFlip = false;
+      cardEl.classList.remove("flip");
+      renderCard();
+      renderStats();
+      renderList();
+    }
+
+    function renderEmpty(){
+      frontText.textContent = "Chưa có thẻ";
+      $("frontSub").textContent = "Hãy thêm thẻ hoặc Import mẫu";
+      backText.textContent = "—";
+      backKana.textContent = "—";
+      backVn.textContent = "—";
+      example.textContent = "Ví dụ: —";
+      tagDeck.textContent = "📚 Deck: —";
+      tagCat.textContent = "#";
+      tagLevel.textContent = "N?";
+    }
+
+    function renderCard(){
+      if(filtered.length === 0) return;
+
+      const c = filtered[idx];
+      const known = progress[c.id] === true;
+
+      frontText.textContent = c.jp || "—";
+      $("frontSub").textContent = known ? "✅ Đã nhớ" : "🟡 Chưa nhớ";
+
+      backText.textContent = c.jp || "—";
+      backKana.textContent = c.kana ? `(${c.kana})` : "—";
+      backVn.textContent = c.vn || "—";
+      example.textContent = "Ví dụ: " + (c.ex || "—");
+
+      tagDeck.textContent = "📚 Deck: " + deckNameById(c.deckId || "default");
+      tagCat.textContent = "#" + (c.cat || "khác");
+      tagLevel.textContent = (c.level || "N?");
+    }
+
+    function renderStats(){
+      const total = cards.length;
+
+      // known/unknown theo TẤT CẢ cards
+      const knownAll = Object.values(progress).filter(v=>v===true).length;
+
+      // trong filter hiện tại
+      const showing = filtered.length;
+      const knownShowing = filtered.filter(c=>progress[c.id]===true).length;
+
+      stats.innerHTML = `
+        <div>📦 Tổng thẻ: <b>${total}</b></div>
+        <div>✅ Đã nhớ (tổng): <b>${knownAll}</b></div>
+        <div>🔎 Hiển thị: <b>${showing}</b></div>
+        <div>✅ Đã nhớ (hiển thị): <b>${knownShowing}</b></div>
+        <div>🧭 Vị trí: <b>${showing ? (idx+1) : 0}/${showing}</b></div>
+      `;
+    }
+
+    function renderList(){
+      listEl.innerHTML = "";
+      if(cards.length === 0){
+        listEl.innerHTML = `<div class="hint">Chưa có dữ liệu. Bấm <b>Import mẫu</b> hoặc thêm thẻ mới.</div>`;
+        return;
+      }
+
+      // list hiển thị theo deckFilter để đỡ rối
+      const deckId = deckFilterEl.value;
+      const listCards = (deckId==="all") ? cards : cards.filter(c=>(c.deckId||"default")===deckId);
+
+      listCards.forEach((c)=>{
+        const div = document.createElement("div");
+        div.className = "item";
+        const known = progress[c.id] === true;
+
+        div.innerHTML = `
+          <div>
+            <div style="font-weight:700">${c.jp || "—"} <small>${c.kana ? "("+c.kana+")" : ""}</small></div>
+            <div class="sub">${c.vn || ""}</div>
+            <div class="sub">📚 ${deckNameById(c.deckId || "default")} ${(c.cat? " • #"+c.cat : "")} ${c.level ? " • "+c.level : ""} ${known ? " • ✅ đã nhớ" : ""}</div>
+          </div>
+          <div class="itemBtns">
+            <button data-go="${c.id}">Học</button>
+            <button data-del="${c.id}" class="bad">Xóa</button>
+          </div>
+        `;
+        listEl.appendChild(div);
+      });
+
+      listEl.querySelectorAll("button[data-go]").forEach(btn=>{
+        btn.onclick = ()=>{
+          const id = btn.dataset.go;
+          const pos = filtered.findIndex(x=>x.id===id);
+          if(pos >= 0){
+            idx = pos;
+            isFlip = false;
+            cardEl.classList.remove("flip");
+            renderCard(); renderStats();
+          } else {
+            // nếu không nằm trong filtered (do mode filter), chuyển mode=all và thử lại
+            modeEl.value = "all";
+            applyFilter();
+            const pos2 = filtered.findIndex(x=>x.id===id);
+            if(pos2 >= 0){
+              idx = pos2;
+              renderCard(); renderStats();
+            }
+          }
+        };
+      });
+
+      listEl.querySelectorAll("button[data-del]").forEach(btn=>{
+        btn.onclick = ()=>{
+          const id = btn.dataset.del;
+          if(!confirm("Xóa thẻ này?")) return;
+          cards = cards.filter(c=>c.id!==id);
+          delete progress[id];
+          saveJSON(KEY_CARDS, cards);
+          saveJSON(KEY_PROGRESS, progress);
+          applyFilter();
+        };
+      });
+    }
+
+    function next(){
+      if(filtered.length === 0) return;
+      idx = (idx + 1) % filtered.length;
+      isFlip = false;
+      cardEl.classList.remove("flip");
+      renderCard(); renderStats();
+    }
+    function prev(){
+      if(filtered.length === 0) return;
+      idx = (idx - 1 + filtered.length) % filtered.length;
+      isFlip = false;
+      cardEl.classList.remove("flip");
+      renderCard(); renderStats();
+    }
+    function flip(){
+      if(filtered.length === 0) return;
+      isFlip = !isFlip;
+      cardEl.classList.toggle("flip", isFlip);
+    }
+    function markKnown(val){
+      if(filtered.length === 0) return;
+      const c = filtered[idx];
+      progress[c.id] = val;
+      saveJSON(KEY_PROGRESS, progress);
+      renderCard(); renderStats(); renderList();
+      if(modeEl.value !== "all") applyFilter();
+    }
+
+    // ========= Deck actions =========
+    $("createDeckBtn").onclick = ()=>{
+      const name = $("newDeckName").value.trim();
+      if(!name){ alert("Nhập tên deck trước nhé."); return; }
+      // chống trùng tên
+      if(decks.some(d=>d.name.toLowerCase()===name.toLowerCase())){
+        alert("Deck này đã tồn tại.");
+        return;
+      }
+      const id = uid();
+      decks.push({id, name});
+      saveJSON(KEY_DECKS, decks);
+      $("newDeckName").value = "";
+      renderDeckOptions();
+      deckFilterEl.value = id; // chuyển sang deck mới
+      deckSelectEl.value = id;
+      applyFilter();
+    };
+
+    $("deleteDeckBtn").onclick = ()=>{
+      const id = deckFilterEl.value;
+      if(id === "all"){ alert("Không thể xóa 'Tất cả (All)'."); return; }
+      if(id === "default"){ alert("Không thể xóa deck 'Mặc định'."); return; }
+      const name = deckNameById(id);
+      if(!confirm(`Xóa deck "${name}"?\n(Thẻ trong deck sẽ chuyển về 'Mặc định')`)) return;
+
+      // chuyển thẻ về default
+      cards = cards.map(c => (c.deckId===id ? {...c, deckId:"default"} : c));
+      decks = decks.filter(d=>d.id!==id);
+
+      saveJSON(KEY_CARDS, cards);
+      saveJSON(KEY_DECKS, decks);
+
+      renderDeckOptions();
+      deckFilterEl.value = "all";
+      applyFilter();
+    };
+
+    // ========= Buttons =========
+    $("nextBtn").onclick = next;
+    $("prevBtn").onclick = prev;
+    $("flipBtn").onclick = flip;
+    cardEl.onclick = flip;
+
+    $("markKnown").onclick = ()=>markKnown(true);
+    $("markUnknown").onclick = ()=>markKnown(false);
+
+    $("shuffleBtn").onclick = ()=>{
+      for(let i=filtered.length-1;i>0;i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [filtered[i], filtered[j]] = [filtered[j], filtered[i]];
+      }
+      idx = 0;
+      isFlip = false;
+      cardEl.classList.remove("flip");
+      renderCard(); renderStats();
+    };
+
+    $("resetProgress").onclick = ()=>{
+      progress = {};
+      saveJSON(KEY_PROGRESS, progress);
+      applyFilter();
+    };
+
+    $("addBtn").onclick = ()=>{
+      const c = {
+        id: uid(),
+        deckId: deckSelectEl.value || "default",
+        jp: $("jp").value.trim(),
+        kana: $("kana").value.trim(),
+        vn: $("vn").value.trim(),
+        ex: $("ex").value.trim(),
+        cat: $("cat").value.trim(),
+        level: $("level").value.trim(),
+      };
+      if(!c.jp || !c.vn){
+        alert("Hãy nhập ít nhất: 日本語 và Nghĩa tiếng Việt.");
+        return;
+      }
+      cards.unshift(c);
+      saveJSON(KEY_CARDS, cards);
+
+      ["jp","kana","vn","ex","cat","level"].forEach(id=>$(id).value="");
+      applyFilter();
+    };
+
+    $("importBtn").onclick = ()=>{
+      if(cards.length && !confirm("Thêm bộ mẫu vào danh sách hiện tại?")) return;
+
+      // đảm bảo các card mẫu có id
+      const samples = defaultCards.map(x => ({...x, id: uid()}));
+      cards = [...samples, ...cards];
+      saveJSON(KEY_CARDS, cards);
+      applyFilter();
+    };
+
+    $("clearAllBtn").onclick = ()=>{
+      if(!confirm("Xóa toàn bộ thẻ, deck và tiến độ?")) return;
+      cards = [];
+      progress = {};
+      decks = [{ id:"all", name:"Tất cả (All)" }, { id:"default", name:"Mặc định" }];
+
+      localStorage.removeItem(KEY_CARDS);
+      localStorage.removeItem(KEY_PROGRESS);
+      saveJSON(KEY_DECKS, decks);
+
+      renderDeckOptions();
+      applyFilter();
+    };
+
+    modeEl.onchange = applyFilter;
+    deckFilterEl.onchange = applyFilter;
+
+    // Keyboard
+    window.addEventListener("keydown", (e)=>{
+      if(e.key === "ArrowRight") next();
+      if(e.key === "ArrowLeft") prev();
+      if(e.key === " "){ e.preventDefault(); flip(); }
+      if(e.key.toLowerCase() === "k") markKnown(true);
+      if(e.key.toLowerCase() === "u") markKnown(false);
+    });
+
+    // Init
+    renderDeckOptions();
+renderDeckStats();
+applyFilter();
+    if(cards.length === 0) renderEmpty();
+  </script>
+</body>
+</html>
